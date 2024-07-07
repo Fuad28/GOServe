@@ -1,11 +1,138 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
+
+	"github.com/codecrafters-io/http-server-starter-go/app/utils"
 )
+
+type Request struct {
+	HTTPVersion string
+	Headers     map[string]string
+	Body        interface{}
+	Method      string
+	Target      string
+}
+
+func NewRequest(req string) (*Request, error) {
+	scanner := bufio.NewScanner(strings.NewReader(req))
+
+	if !scanner.Scan() {
+		return nil, errors.New("invalid request: missing request line")
+	}
+
+	request := Request{}
+
+	// Parse request line
+	requestLine := strings.Fields(scanner.Text())
+	request.Method = requestLine[0]
+	request.Target = requestLine[1]
+	request.HTTPVersion = requestLine[2]
+
+	// Parse headers
+	headers := map[string]string{}
+	for scanner.Scan() {
+		text := scanner.Text()
+
+		if text == "" {
+			break
+		}
+
+		headerParts := strings.Split(text, ": ")
+
+		if len(headerParts) != 2 {
+			return nil, errors.New("invalid request: invalid header")
+
+		} else {
+			headers[headerParts[0]] = headerParts[1]
+		}
+
+	}
+	request.Headers = headers
+
+	// Parse body
+	if scanner.Scan() {
+		request.Body = scanner.Text()
+	}
+	return &request, nil
+}
+
+type Response struct {
+	HTTPVersion string
+	StatusCode  int
+	Headers     map[string]any
+	Body        string
+}
+type HTTPStatus struct {
+	Code         int    `json:"code"`
+	Message      string `json:"message"`
+	Descriptions string `json:"description"`
+}
+
+type HTTPStatusMap map[string]HTTPStatus
+
+func getStatus(code string) (string, error) {
+	httpStatues := HTTPStatusMap{}
+	err := utils.LoadFile[HTTPStatusMap]("http_statuses.json", &httpStatues)
+
+	if err != nil {
+		return "", err
+	}
+	status := httpStatues[code]
+	statusString := strconv.Itoa(status.Code) + " " + status.Message
+	return statusString, nil
+
+}
+
+func (res *Response) ConstructResponse() (string, error) {
+	var response string
+	CRLF := "\r\n"
+
+	if res.StatusCode == 0 {
+		return "", errors.New("status code is required")
+	}
+
+	status, err := getStatus(strconv.Itoa(res.StatusCode))
+
+	if err != nil {
+		return "", err
+	}
+
+	http_version := res.HTTPVersion
+	if http_version == "" {
+		http_version = "HTTP/1.1"
+	}
+
+	response = http_version + " " + status + CRLF
+
+	if res.Body != "" {
+		res.Headers = map[string]any{"Content-Type": "text/plain", "Content-Length": len(res.Body)}
+		response += "Content-Type:text/plain" + CRLF + "Content-Length:" + " " + strconv.Itoa(len(res.Body)) + CRLF + CRLF + res.Body
+	}
+
+	return response, nil
+}
+
+func handleError(conn net.Conn, err error, client bool) {
+
+	if err != nil {
+		defer conn.Close()
+		defer os.Exit(1)
+
+		if client {
+			conn.Write([]byte(err.Error()))
+
+		} else {
+			fmt.Println(err.Error())
+		}
+	}
+}
 
 func main() {
 	fmt.Println("Logs from your program will appear here!")
@@ -16,27 +143,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	CRLF := "\r\n"
-
 	for {
 		conn, err := l.Accept()
-		if err != nil {
-			fmt.Println("Error accepting connection: ", err.Error())
-			os.Exit(1)
-		}
+		handleError(conn, err, false)
 
 		req := make([]byte, 1024)
 		conn.Read(req)
-		url := strings.Split(string(req), CRLF)[0]
 
-		var response string
-		if !strings.HasPrefix(url, "GET / HTTP/1.1") {
-			response = "HTTP/1.1 404 Not Found" + CRLF + CRLF
+		request, err := NewRequest(string(req))
+
+		handleError(conn, err, true)
+
+		response := Response{}
+		if strings.HasPrefix(request.Target, "/echo") {
+			response.StatusCode = 200
+			response.Body = strings.SplitN(request.Target, "/echo/", 2)[1]
+
+		} else if request.Target == "/" {
+			response.StatusCode = 200
+
 		} else {
-			response = "HTTP/1.1 200 OK" + CRLF + CRLF
+			response.StatusCode = 404
+
 		}
 
-		conn.Write([]byte(response))
+		responseString, err := response.ConstructResponse()
+
+		handleError(conn, err, false)
+
+		conn.Write([]byte(responseString))
 		conn.Close()
 	}
 }
