@@ -162,6 +162,10 @@ func main() {
 			response.StatusCode = 200
 			response.Body = strings.SplitN(request.Target, "/echo/", 2)[1]
 
+		} else if strings.HasPrefix(request.Target, "/user-agent") {
+			response.StatusCode = 200
+			response.Body = request.Headers["User-Agent"]
+
 		} else if request.Target == "/" {
 			response.StatusCode = 200
 
