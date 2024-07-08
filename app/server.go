@@ -114,6 +114,9 @@ func (res *Response) ConstructResponse() (string, error) {
 	if res.Body != "" {
 		res.Headers = map[string]any{"Content-Type": "text/plain", "Content-Length": len(res.Body)}
 		response += "Content-Type:text/plain" + CRLF + "Content-Length:" + " " + strconv.Itoa(len(res.Body)) + CRLF + CRLF + res.Body
+
+	} else {
+		response += CRLF
 	}
 
 	return response, nil
