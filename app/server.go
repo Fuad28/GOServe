@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/codecrafters-io/http-server-starter-go/app/utils"
 )
@@ -90,18 +91,18 @@ func getStatus(code string) (string, error) {
 
 }
 
-func (res *Response) ConstructResponse() (string, error) {
+func (res *Response) GetResponseByte() ([]byte, error) {
 	var response string
 	CRLF := "\r\n"
 
 	if res.StatusCode == 0 {
-		return "", errors.New("status code is required")
+		return []byte{}, errors.New("status code is required")
 	}
 
 	status, err := getStatus(strconv.Itoa(res.StatusCode))
 
 	if err != nil {
-		return "", err
+		return []byte{}, err
 	}
 
 	http_version := res.HTTPVersion
@@ -119,7 +120,7 @@ func (res *Response) ConstructResponse() (string, error) {
 		response += CRLF
 	}
 
-	return response, nil
+	return []byte(response), nil
 }
 
 func handleError(conn net.Conn, err error, client bool) {
@@ -142,6 +143,7 @@ func main() {
 
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
+		fmt.Println(err.Error())
 		fmt.Println("Failed to bind to port 4221")
 		os.Exit(1)
 	}
@@ -154,31 +156,44 @@ func main() {
 		conn.Read(req)
 
 		request, err := NewRequest(string(req))
-
 		handleError(conn, err, true)
 
-		response := Response{}
-		if strings.HasPrefix(request.Target, "/echo") {
-			response.StatusCode = 200
-			response.Body = strings.SplitN(request.Target, "/echo/", 2)[1]
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		defer wg.Wait()
 
-		} else if strings.HasPrefix(request.Target, "/user-agent") {
-			response.StatusCode = 200
-			response.Body = request.Headers["User-Agent"]
+		go func() {
+			defer wg.Done()
 
-		} else if request.Target == "/" {
-			response.StatusCode = 200
+			res, err := handleRequest(request)
+			handleError(conn, err, true)
 
-		} else {
-			response.StatusCode = 404
+			responseByte, err := res.GetResponseByte()
+			handleError(conn, err, false)
 
-		}
-
-		responseString, err := response.ConstructResponse()
-
-		handleError(conn, err, false)
-
-		conn.Write([]byte(responseString))
-		conn.Close()
+			conn.Write(responseByte)
+		}()
 	}
+}
+
+func handleRequest(req *Request) (Response, error) {
+	response := Response{}
+	if strings.HasPrefix(req.Target, "/echo") {
+		response.StatusCode = 200
+		response.Body = strings.SplitN(req.Target, "/echo/", 2)[1]
+
+	} else if strings.HasPrefix(req.Target, "/user-agent") {
+		response.StatusCode = 200
+		response.Body = req.Headers["User-Agent"]
+
+	} else if req.Target == "/" {
+		response.StatusCode = 200
+
+	} else {
+		response.StatusCode = 404
+
+	}
+
+	return response, nil
+
 }
