@@ -70,26 +70,6 @@ type Response struct {
 	Headers     map[string]any
 	Body        string
 }
-type HTTPStatus struct {
-	Code         int    `json:"code"`
-	Message      string `json:"message"`
-	Descriptions string `json:"description"`
-}
-
-type HTTPStatusMap map[string]HTTPStatus
-
-func getStatus(code string) (string, error) {
-	httpStatues := HTTPStatusMap{}
-	err := utils.LoadFile[HTTPStatusMap]("http_statuses.json", &httpStatues)
-
-	if err != nil {
-		return "", err
-	}
-	status := httpStatues[code]
-	statusString := strconv.Itoa(status.Code) + " " + status.Message
-	return statusString, nil
-
-}
 
 func (res *Response) GetResponseByte() ([]byte, error) {
 	var response string
@@ -117,20 +97,41 @@ func (res *Response) GetResponseByte() ([]byte, error) {
 		response += "Content-Type:text/plain" + CRLF + "Content-Length:" + " " + strconv.Itoa(len(res.Body)) + CRLF + CRLF + res.Body
 
 	} else {
-		response += CRLF
+		response += "Content-Length: 0" + CRLF + CRLF
 	}
 
 	return []byte(response), nil
 }
 
-func handleError(conn net.Conn, err error, client bool) {
+type HTTPStatus struct {
+	Code         int    `json:"code"`
+	Message      string `json:"message"`
+	Descriptions string `json:"description"`
+}
+
+type HTTPStatusMap map[string]HTTPStatus
+
+func getStatus(code string) (string, error) {
+	httpStatues := HTTPStatusMap{}
+	err := utils.LoadFile[HTTPStatusMap]("http_statuses.json", &httpStatues)
 
 	if err != nil {
-		defer conn.Close()
+		return "", err
+	}
+	status := httpStatues[code]
+	statusString := strconv.Itoa(status.Code) + " " + status.Message
+	return statusString, nil
+
+}
+
+func handleError(conn *net.Conn, err error, client bool) {
+	c := *conn
+	if err != nil {
+		defer c.Close()
 		defer os.Exit(1)
 
 		if client {
-			conn.Write([]byte(err.Error()))
+			c.Write([]byte(err.Error()))
 
 		} else {
 			fmt.Println(err.Error())
@@ -150,19 +151,19 @@ func main() {
 
 	for {
 		conn, err := l.Accept()
-		handleError(conn, err, false)
+		handleError(&conn, err, false)
 
 		req := make([]byte, 1024)
 		conn.Read(req)
 
 		request, err := NewRequest(string(req))
-		handleError(conn, err, true)
+		handleError(&conn, err, true)
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		defer wg.Wait()
 
-		go func(conn net.Conn) {
+		go func(conn *net.Conn) {
 			defer wg.Done()
 
 			res, err := handleRequest(request)
@@ -171,8 +172,8 @@ func main() {
 			responseByte, err := res.GetResponseByte()
 			handleError(conn, err, false)
 
-			conn.Write(responseByte)
-		}(conn)
+			(*conn).Write(responseByte)
+		}(&conn)
 	}
 }
 
@@ -193,7 +194,6 @@ func handleRequest(req *Request) (Response, error) {
 		response.StatusCode = 404
 
 	}
-
 	return response, nil
 
 }
