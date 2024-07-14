@@ -97,9 +97,9 @@ func (res *Response) GetResponseByte() ([]byte, error) {
 		response += "Content-Type:text/plain" + CRLF + "Content-Length:" + " " + strconv.Itoa(len(res.Body)) + CRLF + CRLF + res.Body
 
 	} else {
-		response += "Content-Length: 0" + CRLF + CRLF
+		response += CRLF
 	}
-
+	fmt.Println(response)
 	return []byte(response), nil
 }
 
@@ -173,6 +173,7 @@ func main() {
 			handleError(conn, err, false)
 
 			(*conn).Write(responseByte)
+			(*conn).Close()
 		}(&conn)
 	}
 }
