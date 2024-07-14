@@ -8,7 +8,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/codecrafters-io/http-server-starter-go/app/utils"
 )
@@ -85,12 +84,7 @@ func (res *Response) GetResponseByte() ([]byte, error) {
 		return []byte{}, err
 	}
 
-	http_version := res.HTTPVersion
-	if http_version == "" {
-		http_version = "HTTP/1.1"
-	}
-
-	response = http_version + " " + status + CRLF
+	response = res.HTTPVersion + " " + status + CRLF
 
 	if res.Body != "" {
 		res.Headers = map[string]any{"Content-Type": "text/plain", "Content-Length": len(res.Body)}
@@ -99,7 +93,7 @@ func (res *Response) GetResponseByte() ([]byte, error) {
 	} else {
 		response += CRLF
 	}
-	fmt.Println(response)
+
 	return []byte(response), nil
 }
 
@@ -128,7 +122,6 @@ func handleError(conn *net.Conn, err error, client bool) {
 	c := *conn
 	if err != nil {
 		defer c.Close()
-		defer os.Exit(1)
 
 		if client {
 			c.Write([]byte(err.Error()))
@@ -144,42 +137,40 @@ func main() {
 
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
-		fmt.Println(err.Error())
-		fmt.Println("Failed to bind to port 4221")
+		fmt.Println("Failed to bind to port 4221: ", err.Error())
 		os.Exit(1)
 	}
 
 	for {
 		conn, err := l.Accept()
-		handleError(&conn, err, false)
-
-		req := make([]byte, 1024)
-		conn.Read(req)
-
-		request, err := NewRequest(string(req))
 		handleError(&conn, err, true)
 
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-		defer wg.Wait()
+		go func() {
+			req := make([]byte, 1024)
+			_, err = conn.Read(req)
+			handleError(&conn, err, true)
 
-		go func(conn *net.Conn) {
-			defer wg.Done()
+			request, err := NewRequest(string(req))
+			handleError(&conn, err, true)
 
 			res, err := handleRequest(request)
-			handleError(conn, err, true)
+			handleError(&conn, err, true)
 
 			responseByte, err := res.GetResponseByte()
-			handleError(conn, err, false)
+			handleError(&conn, err, false)
 
-			(*conn).Write(responseByte)
-			(*conn).Close()
-		}(&conn)
+			fmt.Println(responseByte)
+			conn.Write(responseByte)
+			conn.Close()
+		}()
 	}
 }
 
 func handleRequest(req *Request) (Response, error) {
-	response := Response{}
+	response := Response{
+		HTTPVersion: req.HTTPVersion,
+	}
+
 	if strings.HasPrefix(req.Target, "/echo") {
 		response.StatusCode = 200
 		response.Body = strings.SplitN(req.Target, "/echo/", 2)[1]
