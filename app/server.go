@@ -162,7 +162,7 @@ func main() {
 		wg.Add(1)
 		defer wg.Wait()
 
-		go func() {
+		go func(conn net.Conn) {
 			defer wg.Done()
 
 			res, err := handleRequest(request)
@@ -172,7 +172,7 @@ func main() {
 			handleError(conn, err, false)
 
 			conn.Write(responseByte)
-		}()
+		}(conn)
 	}
 }
 
