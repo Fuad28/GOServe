@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"errors"
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -64,15 +65,21 @@ func NewRequest(req string) (*Request, error) {
 }
 
 type Response struct {
-	HTTPVersion string
-	StatusCode  int
-	Headers     map[string]any
-	Body        string
+	HTTPVersion   string
+	StatusCode    int
+	Headers       map[string]any
+	HeadersString string
+	Body          string
+	BodyType      string
 }
 
 func (res *Response) GetResponseByte() ([]byte, error) {
-	var response string
+
 	CRLF := "\r\n"
+
+	res.SetHeaders()
+
+	var response string
 
 	if res.StatusCode == 0 {
 		return []byte{}, errors.New("status code is required")
@@ -84,17 +91,26 @@ func (res *Response) GetResponseByte() ([]byte, error) {
 		return []byte{}, err
 	}
 
-	response = res.HTTPVersion + " " + status + CRLF
-
-	if res.Body != "" {
-		res.Headers = map[string]any{"Content-Type": "text/plain", "Content-Length": len(res.Body)}
-		response += "Content-Type:text/plain" + CRLF + "Content-Length:" + " " + strconv.Itoa(len(res.Body)) + CRLF + CRLF + res.Body
-
-	} else {
-		response += CRLF
-	}
+	response = res.HTTPVersion + " " + status + CRLF + res.HeadersString + res.Body
 
 	return []byte(response), nil
+}
+
+func (res *Response) SetHeaders() {
+	CRLF := "\r\n"
+
+	if res.BodyType == "" {
+		res.BodyType = "text/plain"
+	}
+
+	if res.Body != "" {
+		contentLength := strconv.Itoa(len(res.Body))
+		res.Headers = map[string]any{"Content-Type": res.BodyType, "Content-Length": len(res.Body)}
+		res.HeadersString = fmt.Sprintf("Content-Type:%v"+CRLF+"Content-Length: %v"+CRLF+CRLF, res.BodyType, contentLength)
+
+	} else {
+		res.HeadersString += CRLF
+	}
 }
 
 type HTTPStatus struct {
@@ -135,6 +151,9 @@ func handleError(conn *net.Conn, err error, client bool) {
 func main() {
 	fmt.Println("Logs from your program will appear here!")
 
+	tempFileDirectory := flag.String("directory", "/tmp/", "directory to find files.")
+	flag.Parse()
+
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221: ", err.Error())
@@ -153,20 +172,19 @@ func main() {
 			request, err := NewRequest(string(req))
 			handleError(&conn, err, true)
 
-			res, err := handleRequest(request)
+			res, err := handleRequest(request, tempFileDirectory)
 			handleError(&conn, err, true)
 
 			responseByte, err := res.GetResponseByte()
 			handleError(&conn, err, false)
 
-			fmt.Println(responseByte)
 			conn.Write(responseByte)
 			conn.Close()
 		}()
 	}
 }
 
-func handleRequest(req *Request) (Response, error) {
+func handleRequest(req *Request, tempFileDirectory *string) (Response, error) {
 	response := Response{
 		HTTPVersion: req.HTTPVersion,
 	}
@@ -174,6 +192,27 @@ func handleRequest(req *Request) (Response, error) {
 	if strings.HasPrefix(req.Target, "/echo") {
 		response.StatusCode = 200
 		response.Body = strings.SplitN(req.Target, "/echo/", 2)[1]
+
+	} else if strings.HasPrefix(req.Target, "/files/") {
+
+		fileName := strings.SplitN(req.Target, "/files/", 2)[1]
+		fileLocation := *tempFileDirectory + fileName
+
+		fileContent, err := utils.LoadPlainTextFile(fileLocation)
+
+		if err != nil {
+			if _, ok := err.(*os.PathError); ok {
+				fmt.Println("HEREEE")
+				response.StatusCode = 404
+			} else {
+				response.StatusCode = 400
+			}
+
+		} else {
+			response.StatusCode = 200
+			response.Body = fileContent
+			response.BodyType = "application/octet-stream"
+		}
 
 	} else if strings.HasPrefix(req.Target, "/user-agent") {
 		response.StatusCode = 200
