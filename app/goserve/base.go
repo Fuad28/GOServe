@@ -1,4 +1,4 @@
-package server
+package goserve
 
 import (
 	"errors"
