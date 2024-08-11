@@ -2,7 +2,6 @@ package goserve
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"strings"
 
@@ -46,21 +45,6 @@ func getServerIP() (string, error) {
 		}
 	}
 	return "", errors.New("no suitable IP address found")
-}
-
-func handleError(conn *net.Conn, err error, client bool) {
-	c := *conn
-	if err != nil {
-		defer c.Close()
-		defer panic(err.Error())
-
-		if client {
-			c.Write([]byte(err.Error()))
-
-		} else {
-			fmt.Println(err.Error())
-		}
-	}
 }
 
 // Utility function used to match request path with registered routes.
