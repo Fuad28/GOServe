@@ -3,7 +3,7 @@ package goserve
 import (
 	"slices"
 
-	"github.com/Fuad28/GOServe.git/status"
+	"github.com/Fuad28/GOServe.git/goserve/status"
 )
 
 // If the CORSMiddleware is mounted, it intercepts all requests and check if the clientAddr is in the server's AllowedOrigins array.

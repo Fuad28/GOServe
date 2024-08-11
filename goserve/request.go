@@ -10,7 +10,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Fuad28/GOServe.git/utils"
+	"github.com/Fuad28/GOServe.git/goserve/utils"
 )
 
 type Request struct {

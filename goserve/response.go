@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Fuad28/GOServe.git/status"
-	"github.com/Fuad28/GOServe.git/utils"
+	"github.com/Fuad28/GOServe.git/goserve/status"
+	"github.com/Fuad28/GOServe.git/goserve/utils"
 )
 
 type IResponse interface {

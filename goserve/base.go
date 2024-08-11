@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/Fuad28/GOServe.git/utils"
+	"github.com/Fuad28/GOServe.git/goserve/utils"
 )
 
 // Signature for route handlers
