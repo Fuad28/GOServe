@@ -14,24 +14,24 @@ type HandlerFunc func(*Request, IResponse) IResponse
 
 // Allowed HTTP methods
 const (
-	GET     = "GET"
-	POST    = "POST"
-	PUT     = "PUT"
-	PATCH   = "PATCH"
-	DELETE  = "DELETE"
-	OPTIONS = "OPTIONS"
-	HEAD    = "HEAD"
+	get     = "GET"
+	post    = "POST"
+	put     = "PUT"
+	patch   = "PATCH"
+	delete  = "DELETE"
+	options = "OPTIONS"
+	head    = "HEAD"
 )
 
-// Array of HTTP allowed REQUEST_METHODS
-var REQUEST_METHODS = []string{
-	GET,
-	POST,
-	PUT,
-	PATCH,
-	DELETE,
-	OPTIONS,
-	HEAD,
+// Array of HTTP allowed httpMethods
+var httpMethods = []string{
+	get,
+	post,
+	put,
+	patch,
+	delete,
+	options,
+	head,
 }
 
 func getServerIP() (string, error) {

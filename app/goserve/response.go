@@ -1,4 +1,4 @@
-package server
+package goserve
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 type IResponse interface {
 	SetStatus(int) IResponse
 	SetHeader(key string, value string) IResponse
-	GetHeaders() *utils.KeyValueStore[string, string]
-	GetBody() any
+	Headers() *utils.KeyValueStore[string, string]
+	Body() any
 	Send(any) IResponse
 	GetResponseByte(bool) []byte
 }
@@ -21,25 +21,25 @@ type IResponse interface {
 type Response struct {
 	HTTPVersion string
 	StatusCode  int
-	Headers     *utils.KeyValueStore[string, string]
-	Body        any
+	headers     *utils.KeyValueStore[string, string]
+	body        any
 }
 
 func NewResponse(req *Request) *Response {
 	httpVersion := "HTTP/1.1"
 	if req != nil {
-		httpVersion = req.HTTPVersion
+		httpVersion = req.httpVersion
 	}
 	return &Response{
 		HTTPVersion: httpVersion,
-		Headers:     utils.NewKeyValueStore[string, string](),
+		headers:     utils.NewKeyValueStore[string, string](),
 	}
 }
 
 func (res *Response) BodyAsString() string {
 	var bodySting string
 
-	switch body := res.Body.(type) {
+	switch body := res.body.(type) {
 	case string:
 		bodySting = body
 
@@ -76,7 +76,7 @@ func (res *Response) SetDefaultHeaders(bodyStr string) {
 
 func (res *Response) HeadersToString() string {
 	var headerString string
-	for key, value := range res.Headers.GetAll() {
+	for key, value := range res.headers.GetAll() {
 		headerString += fmt.Sprintf("%v:%v\r\n", key, value)
 	}
 	headerString += "\r\n"
@@ -96,20 +96,20 @@ func (res *Response) SetStatus(code int) IResponse {
 }
 
 func (res *Response) SetHeader(key string, value string) IResponse {
-	res.Headers.Set(key, value)
+	res.headers.Set(key, value)
 	return res
 }
 
-func (res *Response) GetHeaders() *utils.KeyValueStore[string, string] {
-	return res.Headers
+func (res *Response) Headers() *utils.KeyValueStore[string, string] {
+	return res.headers
 }
 
-func (res *Response) GetBody() any {
-	return res.Body
+func (res *Response) Body() any {
+	return res.body
 }
 
 func (res *Response) Send(body any) IResponse {
-	res.Body = body
+	res.body = body
 	return res
 }
 

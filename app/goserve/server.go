@@ -1,4 +1,4 @@
-package server
+package goserve
 
 import (
 	"bytes"
@@ -52,7 +52,7 @@ func (s *Server) Address() (*net.TCPAddr, error) {
 }
 
 func (s *Server) AddRoute(path string, method string, handler HandlerFunc, middlewares []HandlerFunc) (*Route, error) {
-	if slices.Contains(REQUEST_METHODS, method) {
+	if slices.Contains(httpMethods, method) {
 		newRoute := NewRoute(path, method, handler, middlewares)
 		s.Routes = append(s.Routes, *newRoute)
 
@@ -71,29 +71,29 @@ func (s *Server) AddAllowedOrigins(addresses []string) {
 }
 
 func (s *Server) GetRoute(req *Request) *Route {
-	pathParts := strings.SplitN(req.Path, "?", 2)
+	pathParts := strings.SplitN(req.path, "?", 2)
 
 	for _, route := range s.Routes {
 		isPathMatch, pathParams := matchRoute(pathParts[0], route.path)
-		isMethodMatch := req.Method == route.Method
+		isMethodMatch := req.method == route.method
 
 		// For a HEAD request, check that the route's method is HEAD or GET.
-		if req.Method == HEAD {
-			isMethodMatch = (route.Method == GET) || (route.Method == HEAD)
+		if req.method == head {
+			isMethodMatch = (route.method == get) || (route.method == head)
 		}
 
 		// For an OPTIONS request, if the matched route isn't an OPTIONS route, return custom route
-		if (isPathMatch) && (req.Method == OPTIONS) && (route.Method != OPTIONS) {
+		if (isPathMatch) && (req.method == options) && (route.method != options) {
 			return DefaultOptionsRoute(s.AllowedOrigins)
 		}
 
 		if isPathMatch && isMethodMatch {
-			req.PathParams = pathParams
+			req.pathParams = pathParams
 
 			if len(pathParts) > 1 {
-				req.QueryParams = parseQueryParams(pathParts[1])
+				req.queryParams = parseQueryParams(pathParts[1])
 			} else {
-				req.QueryParams = utils.NewKeyValueStore[string, string]()
+				req.queryParams = utils.NewKeyValueStore[string, string]()
 			}
 
 			return &route
@@ -111,38 +111,38 @@ func (s *Server) HandleRequest(req *Request) IResponse {
 		return res.SetStatus(status.HTTP_404_NOT_FOUND).Send("Path not found.")
 	}
 
-	handlerChain := append(append(s.MiddleWares, route.MiddleWares...), route.handler)
-	req.HandlerChain = utils.NewQueue[HandlerFunc](handlerChain)
+	handlerChain := append(append(s.MiddleWares, route.middleWares...), route.handler)
+	req.handlerChain = utils.NewQueue[HandlerFunc](handlerChain)
 
 	return req.Next(res)
 }
 
 func (s *Server) GET(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
-	return s.AddRoute(path, GET, handler, middlewares)
+	return s.AddRoute(path, get, handler, middlewares)
 }
 
 func (s *Server) POST(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
-	return s.AddRoute(path, POST, handler, middlewares)
+	return s.AddRoute(path, post, handler, middlewares)
 }
 
 func (s *Server) PATCH(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
-	return s.AddRoute(path, PATCH, handler, middlewares)
+	return s.AddRoute(path, patch, handler, middlewares)
 }
 
 func (s *Server) PUT(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
-	return s.AddRoute(path, PUT, handler, middlewares)
+	return s.AddRoute(path, put, handler, middlewares)
 }
 
 func (s *Server) DELETE(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
-	return s.AddRoute(path, DELETE, handler, middlewares)
+	return s.AddRoute(path, delete, handler, middlewares)
 }
 
 func (s *Server) OPTIONS(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
-	return s.AddRoute(path, OPTIONS, handler, middlewares)
+	return s.AddRoute(path, options, handler, middlewares)
 }
 
 func (s *Server) HEAD(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
-	return s.AddRoute(path, HEAD, handler, append(middlewares, HEADMiddleware))
+	return s.AddRoute(path, head, handler, append(middlewares, HEADMiddleware))
 }
 
 func (s *Server) ServeAndListen() {
@@ -187,11 +187,12 @@ func (s *Server) ServeAndListen() {
 				body := fmt.Sprint("Error creating request instance: ", err.Error())
 				response.SetStatus(status.HTTP_400_BAD_REQUEST).Send(body)
 				conn.Write(response.GetResponseByte(false))
+
 				return
 			}
 
 			res := s.HandleRequest(req)
-			isHead := req.Method == HEAD
+			isHead := req.method == head
 			conn.Write(res.GetResponseByte(isHead))
 			conn.Close()
 		}()

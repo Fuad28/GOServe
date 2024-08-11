@@ -1,18 +1,18 @@
-package server
+package goserve
 
 type Route struct {
 	path        string
 	handler     HandlerFunc
-	Method      string
-	MiddleWares []HandlerFunc
+	method      string
+	middleWares []HandlerFunc
 }
 
 func NewRoute(path string, method string, handler HandlerFunc, middlewares []HandlerFunc) *Route {
 	return &Route{
 		path:        path,
-		Method:      method,
+		method:      method,
 		handler:     handler,
-		MiddleWares: middlewares,
+		middleWares: middlewares,
 	}
 }
 
@@ -20,8 +20,12 @@ func NewRoute(path string, method string, handler HandlerFunc, middlewares []Han
 func DefaultOptionsRoute(allowedOrigins []string) *Route {
 	return &Route{
 		path:        "*",
-		Method:      OPTIONS,
+		method:      options,
 		handler:     CORSMiddleware(allowedOrigins),
-		MiddleWares: []HandlerFunc{},
+		middleWares: []HandlerFunc{},
 	}
+}
+
+func (r *Route) MiddleWares() []HandlerFunc {
+	return r.middleWares
 }

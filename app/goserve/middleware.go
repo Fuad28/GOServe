@@ -1,4 +1,4 @@
-package server
+package goserve
 
 import (
 	"slices"
@@ -15,10 +15,10 @@ func CORSMiddleware(allowedOrigins []string) HandlerFunc {
 		isAllowed := false
 		origin := ""
 
-		if (req.Origin != nil) && (req.Host != nil) {
-			origin = req.Origin.String()
-			isSameOrigin := req.Origin.Hostname() == req.Host.Hostname()
-			isAllowedOrigin := slices.Contains(allowedOrigins, req.Origin.String())
+		if (req.origin != nil) && (req.host != nil) {
+			origin = req.origin.String()
+			isSameOrigin := req.origin.Hostname() == req.host.Hostname()
+			isAllowedOrigin := slices.Contains(allowedOrigins, req.origin.String())
 			isAllowed = isSameOrigin || isAllowedOrigin
 		}
 
@@ -30,7 +30,7 @@ func CORSMiddleware(allowedOrigins []string) HandlerFunc {
 		res.SetHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		res.SetHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		if req.Method == OPTIONS {
+		if req.method == options {
 			return res.SetStatus(status.HTTP_200_OK).Send(nil)
 		}
 
