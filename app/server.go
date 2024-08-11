@@ -22,7 +22,7 @@ func tasks(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
 	return res.SetStatus(status.HTTP_200_OK).Send(
 		goserve.JSON{
 			"handler": "tasks",
-			"header":  res.GetHeaders().GetAll(),
+			"header":  res.Headers().GetAll(),
 		},
 	)
 }
@@ -30,7 +30,7 @@ func taskDetails(req *goserve.Request, res goserve.IResponse) goserve.IResponse 
 	return res.SetStatus(status.HTTP_200_OK).Send(
 		goserve.JSON{
 			"handler":    "taskDetails",
-			"pathParams": req.PathParams.GetAll(),
+			"pathParams": req.PathParams().GetAll(),
 		},
 	)
 }
@@ -39,7 +39,7 @@ func createTask(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
 		goserve.JSON{
 			"handler": "createTask",
 			"body":    req.Body,
-			"header":  res.GetHeaders().GetAll(),
+			"header":  res.Headers().GetAll(),
 		},
 	)
 }
@@ -47,9 +47,9 @@ func updateTask(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
 	return res.SetStatus(status.HTTP_200_OK).Send(
 		goserve.JSON{
 			"handler":    "updateTask",
-			"pathParams": req.PathParams.GetAll(),
+			"pathParams": req.PathParams().GetAll(),
 			"body":       req.Body,
-			"qParams":    req.QueryParams.GetAll(),
+			"qParams":    req.QueryParams().GetAll(),
 		},
 	)
 }

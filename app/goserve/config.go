@@ -1,7 +1,6 @@
-package server
+package goserve
 
 type Config struct {
-	TempFileDirectory string
 
 	// Port to start the server on, defaults to 4221
 	Port int

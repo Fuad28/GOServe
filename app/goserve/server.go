@@ -25,8 +25,8 @@ func NewServer(config Config) *Server {
 	if config.Port == 0 {
 		config.Port = 4221
 	}
-	if config.TempFileDirectory == "" {
-		config.TempFileDirectory = "/tmp/"
+	if config.MaxRequestSize == 0 {
+		config.MaxRequestSize = ONE_MB
 	}
 
 	return &Server{
