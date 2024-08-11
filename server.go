@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/codecrafters-io/http-server-starter-go/app/goserve"
-	"github.com/codecrafters-io/http-server-starter-go/app/status"
+	"github.com/Fuad28/GOServe.git/goserve"
+	"github.com/Fuad28/GOServe.git/status"
 )
 
 // Test middlewares:

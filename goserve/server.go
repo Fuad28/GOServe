@@ -9,8 +9,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/codecrafters-io/http-server-starter-go/app/status"
-	"github.com/codecrafters-io/http-server-starter-go/app/utils"
+	"github.com/Fuad28/GOServe.git/status"
+	"github.com/Fuad28/GOServe.git/utils"
 )
 
 type Server struct {

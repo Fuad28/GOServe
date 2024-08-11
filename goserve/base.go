@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/codecrafters-io/http-server-starter-go/app/utils"
+	"github.com/Fuad28/GOServe.git/utils"
 )
 
 // Signature for route handlers
