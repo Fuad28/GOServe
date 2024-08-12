@@ -12,6 +12,7 @@ type HTTPStatus struct {
 
 type HTTPStatusMap map[int]HTTPStatus
 
+// HTTP Status map used in constructing response string.
 var HTTPStatuses = HTTPStatusMap{
 	100: {
 		Code:        100,
@@ -456,6 +457,7 @@ var HTTPStatuses = HTTPStatusMap{
 }
 
 // For the given status code, returns a concatenated string of the code and the message i.e 200 OK
+// This is used in constructing response string.
 func GetStatusString(code int) string {
 
 	status := HTTPStatuses[code]
@@ -463,6 +465,7 @@ func GetStatusString(code int) string {
 	return statusString
 }
 
+// Descriptive names for HTTP Status codes.
 const (
 	HTTP_100_CONTINUE                      = 100
 	HTTP_101_SWITCHING_PROTOCOLS           = 101

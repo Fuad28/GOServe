@@ -1,5 +1,6 @@
 package goserve
 
+// Route is a representation of an HTTP route, it holds necessary information to handle  requests
 type Route struct {
 	path        string
 	handler     HandlerFunc
@@ -26,6 +27,7 @@ func DefaultOptionsRoute(allowedOrigins []string) *Route {
 	}
 }
 
+// Method to access the middlewares registered on a route []HandlerFunc
 func (r *Route) MiddleWares() []HandlerFunc {
 	return r.middleWares
 }

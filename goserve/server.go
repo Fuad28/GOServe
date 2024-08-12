@@ -13,17 +13,34 @@ import (
 	"github.com/Fuad28/GOServe.git/goserve/utils"
 )
 
+// The server holds it all together and provides methods that handle routes and requests
+// "It is it"
 type Server struct {
-	Routes         []Route
-	Config         Config
-	MiddleWares    []HandlerFunc
+
+	// Holds all the registered routes
+	// The server is the root route.
+	// Accessed via Routes()
+	Routes []Route
+
+	// config holds important user-set details for the servers to start.
+	// Defaults are set where not provided.
+	Config Config
+
+	// This holds the middlewares mounted on the server itself, all requests will pass through them.
+	// Logging and Localization middlewares can be mounted here.
+	MiddleWares []HandlerFunc
+
+	// These are the allowed orgins that will be permitted if CORSMiddleware is mounted or a pre-flight request is received.
 	AllowedOrigins []string
-	Addr           *net.TCPAddr
+
+	// This is the TCP Address of the server
+	Addr *net.TCPAddr
 }
 
+// Creates a new server based on config set and returns a pointer to the server instance.
 func NewServer(config Config) *Server {
 	if config.Port == 0 {
-		config.Port = 4221
+		config.Port = 8000
 	}
 	if config.MaxRequestSize == 0 {
 		config.MaxRequestSize = ONE_MB
@@ -34,6 +51,8 @@ func NewServer(config Config) *Server {
 	}
 }
 
+// Address is used to obtain the address of the server.
+// It's stored in the Addr field and passed to all requests.
 func (s *Server) Address() (*net.TCPAddr, error) {
 	localIP, err := getServerIP()
 	if err != nil {
@@ -51,6 +70,7 @@ func (s *Server) Address() (*net.TCPAddr, error) {
 	return addr, nil
 }
 
+// AddRoute is used to register routes on the server.
 func (s *Server) AddRoute(path string, method string, handler HandlerFunc, middlewares []HandlerFunc) (*Route, error) {
 	if slices.Contains(httpMethods, method) {
 		newRoute := NewRoute(path, method, handler, middlewares)
@@ -62,13 +82,21 @@ func (s *Server) AddRoute(path string, method string, handler HandlerFunc, middl
 	return nil, errors.New("invalid method")
 }
 
+// AddMiddleWare is used to mount middlewares on the server
+// e.g server.AddMiddleWare(goserve.CORSMiddleware(route.AllowedOrigins))
 func (s *Server) AddMiddleWare(middleware HandlerFunc) {
 	s.MiddleWares = append(s.MiddleWares, middleware)
 }
 
+// AddAllowedOrigins is used to add new trusted origins for CORS after the server has been initialized.
 func (s *Server) AddAllowedOrigins(addresses []string) {
 	s.AllowedOrigins = append(s.AllowedOrigins, addresses...)
 }
+
+// GetRoute matches requests path and method with registered routes.
+// All GET routes also handle HEAD request even when not explictly set.
+// All routes handle OPTIONS requests even when not explictly set.
+// When handling OPTIONS request when not explictyly set, the route.DefaultOptionsRoute handler is used.
 
 func (s *Server) GetRoute(req *Request) *Route {
 	pathParts := strings.SplitN(req.path, "?", 2)
@@ -103,6 +131,13 @@ func (s *Server) GetRoute(req *Request) *Route {
 	return nil
 }
 
+// HandleRequest processes the requests:
+// 1. it initializes the response
+// 2. create the HandlerChain and passes the requests into it
+// 3. matches registered routes and requests
+// 4. handles not found routes
+// 5. returns the final response
+
 func (s *Server) HandleRequest(req *Request) IResponse {
 	res := NewResponse(req)
 	route := s.GetRoute(req)
@@ -117,34 +152,45 @@ func (s *Server) HandleRequest(req *Request) IResponse {
 	return req.Next(res)
 }
 
+// GET is shortcut for s.AddRoute(path, get, handler, middlewares)
 func (s *Server) GET(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
 	return s.AddRoute(path, get, handler, middlewares)
 }
 
+// POST is shortcut for s.AddRoute(path, post, handler, middlewares)
 func (s *Server) POST(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
 	return s.AddRoute(path, post, handler, middlewares)
 }
 
+// PATCH is shortcut for s.AddRoute(path, patch, handler, middlewares)
 func (s *Server) PATCH(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
 	return s.AddRoute(path, patch, handler, middlewares)
 }
 
+// PUT is shortcut for s.AddRoute(path, put, handler, middlewares)
 func (s *Server) PUT(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
 	return s.AddRoute(path, put, handler, middlewares)
 }
 
+// DELETE is shortcut for s.AddRoute(path, delete, handler, middlewares)
 func (s *Server) DELETE(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
 	return s.AddRoute(path, delete, handler, middlewares)
 }
 
+// OPTIONS is shortcut for s.AddRoute(path, options, handler, middlewares)
 func (s *Server) OPTIONS(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
 	return s.AddRoute(path, options, handler, middlewares)
 }
 
+// HEAD is shortcut for s.AddRoute(path, head, handler, middlewares)
+// The HEADMiddleware is automatically appended to this method to set the body to nil as required by HTTP spec
 func (s *Server) HEAD(path string, handler HandlerFunc, middlewares ...HandlerFunc) (*Route, error) {
 	return s.AddRoute(path, head, handler, append(middlewares, HEADMiddleware))
 }
 
+// ServeAndListen is a blocking code that waits for new connections, processes them (asynchronously) and sends responses when done.
+// Handles errors that may arise during server start up.
+// Handles closing of connections and listner.
 func (s *Server) ServeAndListen() {
 	port := s.Config.Port
 	l, err := net.Listen("tcp", fmt.Sprint("0.0.0.0:", port))

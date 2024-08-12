@@ -14,19 +14,61 @@ import (
 )
 
 type Request struct {
-	httpVersion  string
-	headers      *utils.KeyValueStore[string, string]
-	serverAddr   *net.TCPAddr
-	clientAddr   *net.TCPAddr
-	host         *url.URL
-	origin       *url.URL
-	body         any
-	method       string
-	path         string
-	pathParams   *utils.KeyValueStore[string, string]
-	queryParams  *utils.KeyValueStore[string, string]
+	// Represents the HTTPVersion of the request, this is used in constructing the response.
+	// Accessed via HTTPVersion()
+	httpVersion string
+
+	// Holds the values of the request headers
+	// Accessed via Headers()
+	headers *utils.KeyValueStore[string, string]
+
+	// Is the TCP address of the server.
+	//This isn't used internally but seen as a valuable data to have.
+	// Accessed via ServerAddr()
+	serverAddr *net.TCPAddr
+
+	// The TCP address of the client making the request.
+	// This isn't used internally but seen as a valuable data to have.
+	// Accessed via ClientAddr()
+	clientAddr *net.TCPAddr
+
+	// host is the domain the server is running on and is expected to be set by the client.
+	// Used in evaluating same origin requests if CORS middleware is mounted or in handling a pre-flight (OPTIONS) request.
+	// Accessed via Host()
+	host *url.URL
+
+	// origin is the domain of the client is expected to be set by the client.
+	// Used in evaluating if the server is able to share with the client when the CORS middleware mounted or in handling a pre-flight (OPTIONS) request.
+	// Accessed via Origin()
+	origin *url.URL
+
+	// Holds the body of the request which is expected to be valid JSON serializatble.
+	// Accessed via Body()
+	body any
+
+	// Request method
+	// Accessed via Method()
+	method string
+
+	// Request target/endpoint/path
+	// Accessed via Path()
+	path string
+
+	// uses the *utils.KeyValueStore[string, string] data structure to hold path parameters found in the request path.
+	// Accessed via PathParams()
+	pathParams *utils.KeyValueStore[string, string]
+
+	// uses the *utils.KeyValueStore[string, string] data structure to hold query parameters found in the request path.
+	// Accessed via QueryParams()
+	queryParams *utils.KeyValueStore[string, string]
+
+	// uses the *utils.Queue[HandlerFunc] to hold the entire handlers chain for the request.
+	// While the request is being handled, the middlewares and handler are put in a queue to preserve order and allow for efficient retrieval.
 	handlerChain *utils.Queue[HandlerFunc]
-	Store        *utils.KeyValueStore[any, any]
+
+	// An empty Store of type *utils.KeyValueStore[string, string] is kept on all requests.
+	// Allows for sotring and passing data throughout the request-response cycle.
+	Store *utils.KeyValueStore[any, any]
 }
 
 func NewRequest(req string, clientAddr *net.TCPAddr, serverAddr *net.TCPAddr) (*Request, error) {

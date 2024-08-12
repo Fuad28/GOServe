@@ -6,6 +6,17 @@ import (
 	"github.com/Fuad28/GOServe.git/goserve/status"
 )
 
+// Middlewares provide the functionality to intercept and modify the request and response at any point.
+// Middlewares are functions that have the HandlerFunc signature.
+// Middleware functions must always call the next middleware (req.Next(res)) to pass control to the next middleware.
+// You can access the request/ response at any point in the request lifecycle as recursion is used to achieve this e.g check the HEADMiddleware.
+// It can be mounted directly on the main router (i.e the server) i.e route.AddMiddleWare(goserve.CORSMiddleware(route.AllowedOrigins))
+// It can be mounted on indiviual route at the point of registering: route.GET("/tasks", tasks, middleware1, middleware2)
+// In the grand scheme of things, the request-response cycle is simply an entire middlewares chain.
+// The CORSMiddleware is provided to allow CORS implementation. It's not mounted by default
+// The HEADMiddleware is used to majorly to set the response body to null when handling OPTIONS requests.
+// You can use it if you find other applications fot it.
+
 // If the CORSMiddleware is mounted, it intercepts all requests and check if the clientAddr is in the server's AllowedOrigins array.
 // If it's not present, we immediately return a 403 Forbidden response.
 // If it's present and it's an OPTIONS request (i.e preflight), we return a 200 OK response with neccessary CORS headers set.

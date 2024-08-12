@@ -1,7 +1,11 @@
 package utils
 
-// KeyValueStore is a type that represents a collection of key-value pairs.
+// KeyValueStore is a type that allows proper storing and retrieval of data.
+// It's used accross the project for headers, query & path parameters.
+// The implementaiton is generic and exposed to be used outside the project.
 type KeyValueStore[K comparable, T any] struct {
+
+	// data is a map that holds data collection
 	data map[K]T
 }
 

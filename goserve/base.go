@@ -91,4 +91,5 @@ func parseQueryParams(params string) *utils.KeyValueStore[string, string] {
 // Holds the byte value of 1MB, expected to help with the MaxRequestSize field of the config struct
 const ONE_MB = 1024
 
+// Shortcut to create a map of map[string]any, this is intended to be used in constructing JSON responses
 type JSON map[string]any

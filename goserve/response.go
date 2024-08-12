@@ -9,20 +9,51 @@ import (
 	"github.com/Fuad28/GOServe.git/goserve/utils"
 )
 
+// The IResponse defines the interface for a Response
 type IResponse interface {
+	// This is used to set the response status code e.g res.SetStatus(status.HTTP_200_OK)
 	SetStatus(int) IResponse
+
+	// Sets an header. Will override an header if key exists.
 	SetHeader(key string, value string) IResponse
+
+	// Gives access to the response headers as *utils.KeyValueStore[string, string]
+	// e.g res.Headers().Get("Content-Type")
 	Headers() *utils.KeyValueStore[string, string]
+
+	// Allows you to access the response body
 	Body() any
+
+	// Sets the response body.
+	// Note that: This method only sends the response body and doesn't send the response, you have to return the 'res' in your controller.
 	Send(any) IResponse
+
+	// This gives the byte array representation of the response body.
+	// This is invoked in the request-response cycle after a response is ready.
+	// It accepts an isHead bool to know whether to set request body or not.
 	GetResponseByte(bool) []byte
 }
 
+// Response is a type that holds response data.
+// It's an implementation of the IResponse interface.
 type Response struct {
+	// Tihs is the protocol over which the response is sent.
+	// It is extracted from the request.
+	// Accessed via HTTPVersion()
 	HTTPVersion string
-	StatusCode  int
-	headers     *utils.KeyValueStore[string, string]
-	body        any
+
+	// The is the status code for the response. Defaults to status.HTTP_200_OK
+	// Accessed via Status()
+	StatusCode int
+
+	// Holds the values of the response headers set.
+	// The Content-Type and Content-Length headers are set by default just before response is sent
+	// Accessed via Headers()
+	headers *utils.KeyValueStore[string, string]
+
+	// Holds the body of the reposne which is expected to be valid JSON serializatble.
+	// Accessed via Body()
+	body any
 }
 
 func NewResponse(req *Request) *Response {
