@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"net"
-	"os"
 	"slices"
 	"strings"
 
@@ -209,19 +209,17 @@ func (s *Server) ServeAndListen() {
 	defer l.Close()
 
 	if err != nil {
-		fmt.Printf("Failed to bind to port %v: %v", port, err.Error())
-		os.Exit(1)
+		log.Fatalf("Failed to bind to port %v: %v", port, err.Error())
 	}
 
-	fmt.Println("Server running on port ", port)
+	log.Println("Server running on port ", port)
 
 	for {
 		conn, err := l.Accept()
 		defer conn.Close()
 
 		if err != nil {
-			fmt.Printf("Error accepting connection: %v", err.Error())
-			os.Exit(1)
+			log.Fatalf("Error accepting connection: %v", err.Error())
 		}
 
 		clientAddr := conn.RemoteAddr().(*net.TCPAddr)
