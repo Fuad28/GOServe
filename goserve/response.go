@@ -11,6 +11,13 @@ import (
 
 // The IResponse defines the interface for a Response
 type IResponse interface {
+
+	// HTTPVersion returns a value representing the HTTP version used in the sending the response.
+	HTTPVersion() string
+
+	// StatusCode returns the status code of the response. It defaults to 200 if not set.
+	StatusCode() int
+
 	// This is used to set the response status code e.g res.SetStatus(status.HTTP_200_OK)
 	SetStatus(int) IResponse
 
@@ -40,11 +47,11 @@ type Response struct {
 	// Tihs is the protocol over which the response is sent.
 	// It is extracted from the request.
 	// Accessed via HTTPVersion()
-	HTTPVersion string
+	httpVersion string
 
 	// The is the status code for the response. Defaults to status.HTTP_200_OK
 	// Accessed via Status()
-	StatusCode int
+	statusCode int
 
 	// Holds the values of the response headers set.
 	// The Content-Type and Content-Length headers are set by default just before response is sent
@@ -62,7 +69,7 @@ func NewResponse(req *Request) *Response {
 		httpVersion = req.httpVersion
 	}
 	return &Response{
-		HTTPVersion: httpVersion,
+		httpVersion: httpVersion,
 		headers:     utils.NewKeyValueStore[string, string](),
 	}
 }
@@ -122,7 +129,7 @@ func (res *Response) SetStatus(code int) IResponse {
 		code = status.HTTP_200_OK
 	}
 
-	res.StatusCode = code
+	res.statusCode = code
 	return res
 }
 
@@ -133,6 +140,14 @@ func (res *Response) SetHeader(key string, value string) IResponse {
 
 func (res *Response) Headers() *utils.KeyValueStore[string, string] {
 	return res.headers
+}
+
+func (res *Response) HTTPVersion() string {
+	return res.httpVersion
+}
+
+func (res *Response) StatusCode() int {
+	return res.statusCode
 }
 
 func (res *Response) Body() any {
@@ -147,7 +162,7 @@ func (res *Response) Send(body any) IResponse {
 func (res *Response) GetResponseByte(isHead bool) []byte {
 	bodyStr := res.BodyAsString()
 	res.SetDefaultHeaders(bodyStr)
-	responseString := res.HTTPVersion + " " + status.GetStatusString(res.StatusCode) + "\r\n" + res.HeadersToString()
+	responseString := res.httpVersion + " " + status.GetStatusString(res.statusCode) + "\r\n" + res.HeadersToString()
 
 	if isHead {
 		return []byte(responseString)
