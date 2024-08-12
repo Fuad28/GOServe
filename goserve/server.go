@@ -19,22 +19,34 @@ type Server struct {
 
 	// Holds all the registered routes
 	// The server is the root route.
-	// Accessed via Routes()
-	Routes []Route
+	// Accessed via routes()
+	routes []Route
 
 	// config holds important user-set details for the servers to start.
 	// Defaults are set where not provided.
-	Config Config
+	config Config
 
 	// This holds the middlewares mounted on the server itself, all requests will pass through them.
 	// Logging and Localization middlewares can be mounted here.
-	MiddleWares []HandlerFunc
+	middleWares []HandlerFunc
 
 	// These are the allowed orgins that will be permitted if CORSMiddleware is mounted or a pre-flight request is received.
-	AllowedOrigins []string
+	allowedOrigins []string
 
 	// This is the TCP Address of the server
-	Addr *net.TCPAddr
+	addr *net.TCPAddr
+}
+
+func (s *Server) Routes() []Route {
+	return s.routes
+}
+
+func (s *Server) MiddleWares() []HandlerFunc {
+	return s.middleWares
+}
+
+func (s *Server) AllowedOrigins() []string {
+	return s.allowedOrigins
 }
 
 // Creates a new server based on config set and returns a pointer to the server instance.
@@ -47,7 +59,7 @@ func NewServer(config Config) *Server {
 	}
 
 	return &Server{
-		Config: config,
+		config: config,
 	}
 }
 
@@ -59,13 +71,13 @@ func (s *Server) Address() (*net.TCPAddr, error) {
 		return nil, err
 	}
 
-	address := fmt.Sprintf("%s:%d", localIP, s.Config.Port)
+	address := fmt.Sprintf("%s:%d", localIP, s.config.Port)
 	addr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
 		return nil, fmt.Errorf("Error resolving address: %s", err.Error())
 	}
 
-	s.Addr = addr
+	s.addr = addr
 
 	return addr, nil
 }
@@ -74,7 +86,7 @@ func (s *Server) Address() (*net.TCPAddr, error) {
 func (s *Server) AddRoute(path string, method string, handler HandlerFunc, middlewares []HandlerFunc) (*Route, error) {
 	if slices.Contains(httpMethods, method) {
 		newRoute := NewRoute(path, method, handler, middlewares)
-		s.Routes = append(s.Routes, *newRoute)
+		s.routes = append(s.routes, *newRoute)
 
 		return newRoute, nil
 	}
@@ -85,12 +97,12 @@ func (s *Server) AddRoute(path string, method string, handler HandlerFunc, middl
 // AddMiddleWare is used to mount middlewares on the server
 // e.g server.AddMiddleWare(goserve.CORSMiddleware(route.AllowedOrigins))
 func (s *Server) AddMiddleWare(middleware HandlerFunc) {
-	s.MiddleWares = append(s.MiddleWares, middleware)
+	s.middleWares = append(s.middleWares, middleware)
 }
 
 // AddAllowedOrigins is used to add new trusted origins for CORS after the server has been initialized.
 func (s *Server) AddAllowedOrigins(addresses []string) {
-	s.AllowedOrigins = append(s.AllowedOrigins, addresses...)
+	s.allowedOrigins = append(s.allowedOrigins, addresses...)
 }
 
 // GetRoute matches requests path and method with registered routes.
@@ -101,7 +113,7 @@ func (s *Server) AddAllowedOrigins(addresses []string) {
 func (s *Server) GetRoute(req *Request) *Route {
 	pathParts := strings.SplitN(req.path, "?", 2)
 
-	for _, route := range s.Routes {
+	for _, route := range s.routes {
 		isPathMatch, pathParams := matchRoute(pathParts[0], route.path)
 		isMethodMatch := req.method == route.method
 
@@ -112,7 +124,7 @@ func (s *Server) GetRoute(req *Request) *Route {
 
 		// For an OPTIONS request, if the matched route isn't an OPTIONS route, return custom route
 		if (isPathMatch) && (req.method == options) && (route.method != options) {
-			return DefaultOptionsRoute(s.AllowedOrigins)
+			return DefaultOptionsRoute(s.allowedOrigins)
 		}
 
 		if isPathMatch && isMethodMatch {
@@ -146,7 +158,7 @@ func (s *Server) HandleRequest(req *Request) IResponse {
 		return res.SetStatus(status.HTTP_404_NOT_FOUND).Send("Path not found.")
 	}
 
-	handlerChain := append(append(s.MiddleWares, route.middleWares...), route.handler)
+	handlerChain := append(append(s.middleWares, route.middleWares...), route.handler)
 	req.handlerChain = utils.NewQueue[HandlerFunc](handlerChain)
 
 	return req.Next(res)
@@ -192,7 +204,7 @@ func (s *Server) HEAD(path string, handler HandlerFunc, middlewares ...HandlerFu
 // Handles errors that may arise during server start up.
 // Handles closing of connections and listner.
 func (s *Server) ServeAndListen() {
-	port := s.Config.Port
+	port := s.config.Port
 	l, err := net.Listen("tcp", fmt.Sprint("0.0.0.0:", port))
 	defer l.Close()
 
@@ -213,11 +225,11 @@ func (s *Server) ServeAndListen() {
 		}
 
 		clientAddr := conn.RemoteAddr().(*net.TCPAddr)
-		serverAddr := s.Addr
+		serverAddr := s.addr
 
 		go func() {
 			response := NewResponse(nil)
-			request := make([]byte, s.Config.MaxRequestSize)
+			request := make([]byte, s.config.MaxRequestSize)
 			_, err = conn.Read(request)
 			request = bytes.Trim(request, "\x00")
 

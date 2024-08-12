@@ -71,7 +71,7 @@ func main() {
 	}
 
 	route := goserve.NewServer(config)
-	route.AddMiddleWare(goserve.CORSMiddleware(route.AllowedOrigins))
+	route.AddMiddleWare(goserve.CORSMiddleware(route.AllowedOrigins()))
 	route.AddMiddleWare(middleware1)
 
 	route.GET("/tasks", tasks, middleware2)
