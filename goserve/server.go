@@ -205,7 +205,7 @@ func (s *Server) HEAD(path string, handler HandlerFunc, middlewares ...HandlerFu
 // Handles closing of connections and listner.
 func (s *Server) ServeAndListen() {
 	port := s.config.Port
-	l, err := net.Listen("tcp", fmt.Sprint("0.0.0.0:", port))
+	l, err := net.Listen("tcp", fmt.Sprint(":", port))
 	defer l.Close()
 
 	if err != nil {
