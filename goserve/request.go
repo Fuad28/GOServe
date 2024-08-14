@@ -83,6 +83,7 @@ func NewRequest(req string, clientAddr *net.TCPAddr, serverAddr *net.TCPAddr) (*
 	request := Request{
 		clientAddr: clientAddr,
 		serverAddr: serverAddr,
+		Store:      utils.NewKeyValueStore[any, any](),
 	}
 
 	// Parse request line
