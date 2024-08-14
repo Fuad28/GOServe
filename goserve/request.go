@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/url"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -44,7 +46,7 @@ type Request struct {
 
 	// Holds the body of the request which is expected to be valid JSON serializatble.
 	// Accessed via Body()
-	body any
+	body []byte
 
 	// Request method
 	// Accessed via Method()
@@ -122,11 +124,14 @@ func NewRequest(req string, clientAddr *net.TCPAddr, serverAddr *net.TCPAddr) (*
 
 	// Parse body
 	if scanner.Scan() {
-		var bodyMap map[string]any
-		if err := json.Unmarshal([]byte(scanner.Text()), &bodyMap); err != nil {
+
+		// Validate body is a valid JSON
+		if body, err := json.Marshal(scanner.Text()); err != nil {
 			return nil, fmt.Errorf("invalid request: %v", err.Error())
+
+		} else {
+			request.body = body
 		}
-		request.body = bodyMap
 	}
 
 	// Parse Host
@@ -185,8 +190,13 @@ func (req *Request) Origin() *url.URL {
 	return req.origin
 }
 
-func (req *Request) Body() any {
-	return req.Body
+func (req *Request) Body(v any) error {
+
+	if reflect.TypeOf(v).Kind() != reflect.Pointer {
+		log.Fatal("v must be a point")
+	}
+
+	return json.Unmarshal(req.body, v)
 }
 
 func (req *Request) Method() string {
