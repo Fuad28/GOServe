@@ -14,11 +14,23 @@ type Task struct {
 	UserId int    `json:"userId"`
 }
 
-// Initialize our "database" by adding some data to the "tables"
+// Initialize our "database" by seeding some data to the "tables"
 func initDB(users *utils.KeyValueStore[int, User], tasks *utils.KeyValueStore[int, Task]) {
-	users.Set(1, User{Id: 1, Name: "Alice"})
-	users.Set(2, User{Id: 2, Name: "Bob"})
+	users.Set(1, User{Id: 1, Name: "John"})
+	users.Set(2, User{Id: 2, Name: "Doe"})
 
-	tasks.Set(1, Task{Id: 1, Title: "Buy groceries", UserId: 1})
-	tasks.Set(2, Task{Id: 2, Title: "Read a book", UserId: 2})
+	tasks.Set(1, Task{Id: 1, Title: "Add subroute support", UserId: 1})
+	tasks.Set(2, Task{Id: 2, Title: "Add HTTP encoding", UserId: 2})
+}
+
+func getTasksByUserId(tasks *utils.KeyValueStore[int, Task], userId int) *utils.KeyValueStore[int, Task] {
+	var userTasks *utils.KeyValueStore[int, Task]
+
+	for _, task := range tasks.GetAll() {
+		if task.UserId == userId {
+			userTasks.Set(task.Id, task)
+		}
+	}
+
+	return userTasks
 }

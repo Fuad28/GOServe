@@ -7,6 +7,7 @@ import (
 
 // This example builds a simple ToDo api to demonstrate GOServe usage.
 // We use the utils.KeyValueStore provided by GOServe as database
+// Since authenticationMiddlware sample, directly sets the token as the userId, you should set the Authorization header to 1 or 2.
 
 var users *utils.KeyValueStore[int, User]
 var tasks *utils.KeyValueStore[int, Task]
@@ -31,7 +32,6 @@ func main() {
 	server.GET("/tasks", allTasks)
 	server.POST("/tasks", createTask)
 	server.GET("/tasks/:id", taskDetails)
-	server.PATCH("/tasks/:id", updateTask)
 	server.DELETE("/tasks/:id", deleteTask)
 
 	// Start server and listen for connections
