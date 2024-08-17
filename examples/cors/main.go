@@ -22,7 +22,7 @@ func main() {
 		AllowedOrigins: []string{"https://www.google.com/"},
 	})
 
-	server.AddMiddleWare(goserve.CORSMiddleware(server.AllowedOrigins()))
+	server.AddMiddleWares(goserve.CORSMiddleware(server.AllowedOrigins()))
 
 	server.GET("/tasks", getTasksHandler)
 

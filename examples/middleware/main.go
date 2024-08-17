@@ -62,7 +62,7 @@ func main() {
 		Port: 8000,
 	})
 
-	server.AddMiddleWare(loggingMiddleware)
+	server.AddMiddleWares(loggingMiddleware)
 
 	server.GET("/tasks", getTasksHandler, authenticationMiddlware, cacheMiddlware)
 

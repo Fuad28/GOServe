@@ -27,8 +27,10 @@ func main() {
 	seedDB(users, tasks)
 
 	// Add server level middlewares
-	server.AddMiddleWare(goserve.CORSMiddleware(server.AllowedOrigins()))
-	server.AddMiddleWare(authenticationMiddlware)
+	server.AddMiddleWares(
+		goserve.CORSMiddleware(server.AllowedOrigins()),
+		authenticationMiddlware,
+	)
 
 	// Register routes
 	server.GET("/tasks", allTasks)
