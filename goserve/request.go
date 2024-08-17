@@ -12,6 +12,8 @@ import (
 	"slices"
 	"strings"
 
+	validator "github.com/asaskevich/govalidator"
+
 	"github.com/Fuad28/GOServe.git/goserve/utils"
 )
 
@@ -124,15 +126,20 @@ func NewRequest(req string, clientAddr *net.TCPAddr, serverAddr *net.TCPAddr) (*
 	request.headers = headers
 
 	// Parse body
-	if scanner.Scan() {
+	bodyStr := new(strings.Builder)
+	for scanner.Scan() {
+		bodyStr.WriteString(scanner.Text())
+	}
 
-		// Validate body is a valid JSON
-		if body, err := json.Marshal(scanner.Text()); err != nil {
-			return nil, fmt.Errorf("invalid request: %v", err.Error())
+	// Validate body is a valid JSON
+	bodyBytes := []byte(bodyStr.String())
+	var bodyJSON map[string]any
 
-		} else {
-			request.body = body
-		}
+	if err := json.Unmarshal(bodyBytes, &bodyJSON); err != nil {
+		return nil, fmt.Errorf("invalid request: %v", err.Error())
+
+	} else {
+		request.body = bodyBytes
 	}
 
 	// Parse Host
@@ -197,7 +204,14 @@ func (req *Request) Body(v any) error {
 		log.Fatal("v must be a point")
 	}
 
-	return json.Unmarshal(req.body, v)
+	err := json.Unmarshal(req.body, v)
+
+	if err != nil {
+		return err
+	}
+	_, err = validator.ValidateStruct(v)
+
+	return err
 }
 
 func (req *Request) Method() string {
