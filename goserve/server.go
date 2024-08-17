@@ -200,10 +200,10 @@ func (s *Server) HEAD(path string, handler HandlerFunc, middlewares ...HandlerFu
 	return s.AddRoute(path, head, handler, append(middlewares, HEADMiddleware))
 }
 
-// ServeAndListen is a blocking code that waits for new connections, processes them (asynchronously) and sends responses when done.
+// StartAndListen is a blocking code that waits for new connections, processes them (asynchronously) and sends responses when done.
 // Handles errors that may arise during server start up.
 // Handles closing of connections and listner.
-func (s *Server) ServeAndListen() {
+func (s *Server) StartAndListen() {
 	port := s.config.Port
 	l, err := net.Listen("tcp", fmt.Sprint(":", port))
 	defer l.Close()
@@ -232,17 +232,20 @@ func (s *Server) ServeAndListen() {
 			request = bytes.Trim(request, "\x00")
 
 			if err != nil {
-				body := fmt.Sprint("Error reading request: ", err.Error())
-				response.SetStatus(status.HTTP_400_BAD_REQUEST).Send(body)
+				errStr := fmt.Sprint("Error reading request: ", err.Error())
+				response.SetStatus(status.HTTP_400_BAD_REQUEST).Send(JSON{"error": errStr})
 				conn.Write(response.GetResponseByte(false))
+				conn.Close()
+
 				return
 			}
 
 			req, err := NewRequest(string(request), clientAddr, serverAddr)
 			if err != nil {
-				body := fmt.Sprint("Error creating request instance: ", err.Error())
-				response.SetStatus(status.HTTP_400_BAD_REQUEST).Send(body)
+				errStr := fmt.Sprint("Error creating request instance: ", err.Error())
+				response.SetStatus(status.HTTP_400_BAD_REQUEST).Send(JSON{"error": errStr})
 				conn.Write(response.GetResponseByte(false))
+				conn.Close()
 
 				return
 			}
@@ -250,6 +253,10 @@ func (s *Server) ServeAndListen() {
 			res := s.HandleRequest(req)
 			isHead := req.method == head
 			conn.Write(res.GetResponseByte(isHead))
+
+			// Log Request & Response
+			log.Printf("%v %v %v %v\n", req.method, req.path, req.httpVersion, res.StatusCode())
+
 			conn.Close()
 		}()
 	}
