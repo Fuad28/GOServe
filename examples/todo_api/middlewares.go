@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strconv"
+
 	"github.com/Fuad28/GOServe.git/goserve"
 	"github.com/Fuad28/GOServe.git/goserve/status"
 )
@@ -10,7 +12,7 @@ func authenticationMiddlware(req *goserve.Request, res goserve.IResponse) goserv
 	if token, exists := req.Headers().Get("Authorization"); exists {
 
 		// Token authentication logic
-		userId := token
+		userId, _ := strconv.Atoi(token)
 		req.Store.Set("userId", userId)
 
 	} else {

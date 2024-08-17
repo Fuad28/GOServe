@@ -66,5 +66,5 @@ func main() {
 
 	server.GET("/tasks", getTasksHandler, authenticationMiddlware, cacheMiddlware)
 
-	server.ServeAndListen()
+	server.StartAndListen()
 }

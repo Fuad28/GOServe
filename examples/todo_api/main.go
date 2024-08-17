@@ -7,7 +7,7 @@ import (
 
 // This example builds a simple ToDo api to demonstrate GOServe usage.
 // We use the utils.KeyValueStore provided by GOServe as database
-// Since authenticationMiddlware sample, directly sets the token as the userId, you should set the Authorization header to 1 or 2.
+// Since authenticationMiddlware sample directly sets the token as the userId, you should set the Authorization header to 1 or 2.
 
 var users *utils.KeyValueStore[int, User]
 var tasks *utils.KeyValueStore[int, Task]
@@ -21,8 +21,10 @@ func main() {
 		AllowedOrigins: []string{"http://127.0.0.1"},
 	})
 
-	// initialze database with dummy data
-	initDB(users, tasks)
+	// initialze and seed database.
+	users = utils.NewKeyValueStore[int, User]()
+	tasks = utils.NewKeyValueStore[int, Task]()
+	seedDB(users, tasks)
 
 	// Add server level middlewares
 	server.AddMiddleWare(goserve.CORSMiddleware(server.AllowedOrigins()))
@@ -35,5 +37,5 @@ func main() {
 	server.DELETE("/tasks/:id", deleteTask)
 
 	// Start server and listen for connections
-	server.ServeAndListen()
+	server.StartAndListen()
 }

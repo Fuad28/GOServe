@@ -15,5 +15,5 @@ func main() {
 
 	server.GET("/tasks", getTasksHandler)
 
-	server.ServeAndListen()
+	server.StartAndListen()
 }

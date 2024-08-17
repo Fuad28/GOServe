@@ -21,8 +21,6 @@ func allTasks(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
 }
 
 func taskDetails(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
-
-	// userId exists because the route is protected on server level
 	userId, _ := req.Store.Get("userId")
 
 	taskIdStr, _ := req.PathParams().Get("id")
@@ -51,7 +49,6 @@ func taskDetails(req *goserve.Request, res goserve.IResponse) goserve.IResponse 
 			},
 		)
 	}
-
 }
 
 func createTask(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
@@ -68,6 +65,7 @@ func createTask(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
 	userId, _ := req.Store.Get("userId")
 	task.Id = len(tasks.GetAll()) + 1
 	task.UserId = userId.(int)
+	tasks.Set(task.Id, task)
 
 	return res.SetStatus(status.HTTP_201_CREATED).Send(
 		goserve.JSON{
@@ -77,7 +75,6 @@ func createTask(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
 }
 
 func deleteTask(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
-	// userId exists because the route is protected on server level
 	userId, _ := req.Store.Get("userId")
 
 	taskIdStr, _ := req.PathParams().Get("id")

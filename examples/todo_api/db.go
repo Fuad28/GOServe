@@ -1,6 +1,8 @@
 package main
 
-import "github.com/Fuad28/GOServe.git/goserve/utils"
+import (
+	"github.com/Fuad28/GOServe.git/goserve/utils"
+)
 
 // Data setup
 type User struct {
@@ -10,12 +12,12 @@ type User struct {
 
 type Task struct {
 	Id     int    `json:"id"`
-	Title  string `json:"title"`
+	Title  string `json:"title" valid:"required"`
 	UserId int    `json:"userId"`
 }
 
 // Initialize our "database" by seeding some data to the "tables"
-func initDB(users *utils.KeyValueStore[int, User], tasks *utils.KeyValueStore[int, Task]) {
+func seedDB(users *utils.KeyValueStore[int, User], tasks *utils.KeyValueStore[int, Task]) {
 	users.Set(1, User{Id: 1, Name: "John"})
 	users.Set(2, User{Id: 2, Name: "Doe"})
 
@@ -24,7 +26,7 @@ func initDB(users *utils.KeyValueStore[int, User], tasks *utils.KeyValueStore[in
 }
 
 func getTasksByUserId(tasks *utils.KeyValueStore[int, Task], userId int) *utils.KeyValueStore[int, Task] {
-	var userTasks *utils.KeyValueStore[int, Task]
+	userTasks := utils.NewKeyValueStore[int, Task]()
 
 	for _, task := range tasks.GetAll() {
 		if task.UserId == userId {
