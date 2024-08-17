@@ -156,7 +156,7 @@ server.AddMiddlewares(authenticationMiddlware)
 In your handler, you would access the userId as:
 
 ```go
-func authenticationMiddlware(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
+func allTasksHandler(req *goserve.Request, res goserve.IResponse) goserve.IResponse {
   userId, exists := req.Store.Get("userId", userId)
 }
 ```
