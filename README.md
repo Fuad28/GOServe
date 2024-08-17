@@ -118,6 +118,7 @@ server.AddMiddlewares(loggingMiddleware)
 
 ### CORS Support
 GOServe has built-in CORS support, configurable via middleware. Allow specific origins, methods, and headers.
+* **Note: When testing with non-browser clients like Postman and Curl, you have to set your Origin header manually.
 
 Example:
 
