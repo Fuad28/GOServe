@@ -168,7 +168,7 @@ Contributions are welcome! Please read the [contributing guide](./contributing.m
 Check out the currently open [issues](https://github.com/fuad28/goserve/issues).
 
 ### License
-This project is licensed under the [MIT license](./LICENSE).
+This project is licensed under the [MIT license](./LICENSE.md).
 
 ### Contributors
 <a href="https://github.com/fuad28/goserve/graphs/contributors">
