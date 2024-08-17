@@ -126,20 +126,25 @@ func NewRequest(req string, clientAddr *net.TCPAddr, serverAddr *net.TCPAddr) (*
 	request.headers = headers
 
 	// Parse body
-	bodyStr := new(strings.Builder)
+	bodyStrBuilder := new(strings.Builder)
 	for scanner.Scan() {
-		bodyStr.WriteString(scanner.Text())
+		bodyStrBuilder.WriteString(scanner.Text())
 	}
 
-	// Validate body is a valid JSON
-	bodyBytes := []byte(bodyStr.String())
-	var bodyJSON map[string]any
+	bodyStr := strings.Trim(bodyStrBuilder.String(), "")
 
-	if err := json.Unmarshal(bodyBytes, &bodyJSON); err != nil {
-		return nil, fmt.Errorf("invalid request: %v", err.Error())
+	if bodyStr != "" {
+		// Validate body is a valid JSON
+		bodyBytes := []byte(bodyStr)
+		var bodyJSON map[string]any
 
-	} else {
-		request.body = bodyBytes
+		if err := json.Unmarshal(bodyBytes, &bodyJSON); err != nil {
+			return nil, fmt.Errorf("invalid request: %v", err.Error())
+
+		} else {
+			request.body = bodyBytes
+		}
+
 	}
 
 	// Parse Host
