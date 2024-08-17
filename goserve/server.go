@@ -94,10 +94,10 @@ func (s *Server) AddRoute(path string, method string, handler HandlerFunc, middl
 	return nil, errors.New("invalid method")
 }
 
-// AddMiddleWare is used to mount middlewares on the server
-// e.g server.AddMiddleWare(goserve.CORSMiddleware(route.AllowedOrigins))
-func (s *Server) AddMiddleWare(middleware HandlerFunc) {
-	s.middleWares = append(s.middleWares, middleware)
+// AddMiddleWares is used to mount middlewares on the server
+// e.g server.AddMiddleWares(goserve.CORSMiddleware(route.AllowedOrigins))
+func (s *Server) AddMiddleWares(middleware ...HandlerFunc) {
+	s.middleWares = append(s.middleWares, middleware...)
 }
 
 // AddAllowedOrigins is used to add new trusted origins for CORS after the server has been initialized.
